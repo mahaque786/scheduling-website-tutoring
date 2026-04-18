@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book a Tutoring Session</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f9;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+    .container {
+      max-width: 760px;
+      margin: 40px auto;
+      background: white;
+      padding: 24px;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    h1 {
+      margin-top: 0;
+    }
+    p {
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .full {
+      grid-column: 1 / -1;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-sizing: border-box;
+      font-size: 15px;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      background: #111827;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    button:hover {
+      opacity: 0.95;
+    }
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 10px;
+      display: none;
+    }
+    .ok {
+      background: #ecfdf5;
+      color: #065f46;
+    }
+    .err {
+      background: #fef2f2;
+      color: #991b1b;
+    }
+    .small {
+      font-size: 13px;
+      color: #555;
+    }
+    @media (max-width: 640px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Book a Tutoring Session</h1>
+    <p>
+      Choose a location, select your session type, and request a time.
+      Bookings are checked against location hours and calendar availability.
+    </p>
+
+    <form id="bookingForm" class="grid">
+      <div>
+        <label for="client_name">Full Name</label>
+        <input id="client_name" type="text" required />
+      </div>
+
+      <div>
+        <label for="client_phone">Phone Number</label>
+        <input id="client_phone" type="tel" placeholder="+1 214 555 1234" required />
+      </div>
+
+      <div>
+        <label for="client_email">Email Address</label>
+        <input id="client_email" type="email" required />
+      </div>
+
+      <div>
+        <label for="service_type">Service</label>
+        <select id="service_type" required></select>
+      </div>
+
+      <div class="full">
+        <label for="location_id">Location</label>
+        <select id="location_id" required></select>
+      </div>
+
+      <div>
+        <label for="date">Date</label>
+        <input id="date" type="date" required />
+      </div>
+
+      <div>
+        <label for="time">Start Time</label>
+        <input id="time" type="time" required />
+      </div>
+
+      <div class="full">
+        <label for="notes">Notes</label>
+        <textarea id="notes" placeholder="Anything I should know before the session?"></textarea>
+      </div>
+
+      <div class="full">
+        <button type="submit">Request Booking</button>
+      </div>
+    </form>
+
+    <div class="small" style="margin-top: 12px;">
+      The final time is subject to location hours and existing calendar events, including a 90-minute buffer.
+    </div>
+
+    <div id="statusBox" class="status"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "YOUR_SUPABASE_URL";
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const serviceTypeEl = document.getElementById("service_type");
+    const locationEl = document.getElementById("location_id");
+    const statusBox = document.getElementById("statusBox");
+    const bookingForm = document.getElementById("bookingForm");
+
+    function showStatus(message, ok = true) {
+      statusBox.style.display = "block";
+      statusBox.className = `status ${ok ? "ok" : "err"}`;
+      statusBox.textContent = message;
+    }
+
+    async function loadServices() {
+      const { data, error } = await supabase
+        .from("service_types")
+        .select("id, name, duration_minutes")
+        .eq("active", true)
+        .order("name");
+
+      if (error) {
+        showStatus("Could not load services: " + error.message, false);
+        return;
+      }
+
+      serviceTypeEl.innerHTML = `<option value="">Select a service</option>`;
+      for (const row of data) {
+        const option = document.createElement("option");
+        option.value = row.id;
+        option.textContent = `${row.name} (${row.duration_minutes} min)`;
+        serviceTypeEl.appendChild(option);
+      }
+    }
+
+    async function loadLocations() {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("id, name, address")
+        .eq("active", true)
+        .order("name");
+
+      if (error) {
+        showStatus("Could not load locations: " + error.message, false);
+        return;
+      }
+
+      locationEl.innerHTML = `<option value="">Select a location</option>`;
+      for (const row of data) {
+        const option = document.createElement("option");
+        option.value = row.id;
+        option.textContent = row.address ? `${row.name} — ${row.address}` : row.name;
+        locationEl.appendChild(option);
+      }
+    }
+
+    function buildChicagoISO(dateValue, timeValue) {
+      // This creates a local datetime string. For production, use a timezone-aware library.
+      return `${dateValue}T${timeValue}:00-05:00`;
+    }
+
+    bookingForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusBox.style.display = "none";
+
+      const client_name = document.getElementById("client_name").value.trim();
+      const client_phone = document.getElementById("client_phone").value.trim();
+      const client_email = document.getElementById("client_email").value.trim();
+      const service_type_id = serviceTypeEl.value;
+      const location_id = locationEl.value;
+      const date = document.getElementById("date").value;
+      const time = document.getElementById("time").value;
+      const notes = document.getElementById("notes").value.trim();
+
+      if (!client_name || !client_phone || !client_email || !service_type_id || !location_id || !date || !time) {
+        showStatus("Please fill out all required fields.", false);
+        return;
+      }
+
+      const starts_at = buildChicagoISO(date, time);
+
+      const { data, error } = await supabase.rpc("create_booking", {
+        p_service_type_id: service_type_id,
+        p_location_id: location_id,
+        p_client_name: client_name,
+        p_client_email: client_email,
+        p_client_phone: client_phone,
+        p_notes: notes || null,
+        p_starts_at: starts_at,
+        p_timezone: "America/Chicago"
+      });
+
+      if (error) {
+        showStatus(`Booking failed: ${error.message}`, false);
+        return;
+      }
+
+      showStatus("Booking confirmed. You should receive a confirmation message soon.", true);
+      bookingForm.reset();
+      console.log("Created booking:", data);
+    });
+
+    loadServices();
+    loadLocations();
+  </script>
+</body>
+</html>
