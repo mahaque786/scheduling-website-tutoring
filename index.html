@@ -165,7 +165,7 @@
 
     const serviceTypeEl = document.getElementById("service_type");
     const locationEl = document.getElementById("location_id");
-    const selectedStartTimeEl = document.getElementById("time");
+    const selectedStartTimeEl = document.getElementById("selected_start_time");
     const statusBox = document.getElementById("statusBox");
     const bookingForm = document.getElementById("bookingForm");
 
@@ -265,7 +265,6 @@
 
   const loadSlotsBtn = document.getElementById("loadSlotsBtn");
   const slotsContainer = document.getElementById("slotsContainer");
-  const selectedStartTimeEl = document.getElementById("selected_start_time");
 
   function formatSlot(isoString) {
     return new Date(isoString).toLocaleTimeString([], {
