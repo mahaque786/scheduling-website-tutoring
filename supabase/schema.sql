@@ -174,6 +174,7 @@ declare
     v_day_end          timestamptz;
     v_candidate        timestamptz;
     v_candidate_end    timestamptz;
+    v_now              timestamptz := now();
 begin
     if p_location_id is null
        or p_service_type_id is null
@@ -229,7 +230,7 @@ begin
         v_candidate_end := v_candidate + make_interval(mins => v_duration_minutes);
 
         -- Only expose future slots.
-        if v_candidate > now()
+        if v_candidate > v_now
            and not exists (
                select 1
                  from public.bookings b
@@ -347,6 +348,12 @@ begin
     returning * into v_row;
 
     return v_row;
+exception
+    -- Concurrent insert for the same (location_id, starts_at) hit the
+    -- partial unique index `bookings_location_start_unique`. Translate it
+    -- into the same user-facing error as the pre-check above.
+    when unique_violation then
+        raise exception 'Selected time slot is no longer available';
 end;
 $$;
 
