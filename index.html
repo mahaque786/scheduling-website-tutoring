@@ -263,6 +263,68 @@
       console.log("Created booking:", data);
     });
 
+    <script>
+  const loadSlotsBtn = document.getElementById("loadSlotsBtn");
+  const slotsContainer = document.getElementById("slotsContainer");
+  const selectedStartTimeEl = document.getElementById("selected_start_time");
+
+  function formatSlot(isoString) {
+    return new Date(isoString).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit"
+    });
+  }
+
+  loadSlotsBtn.addEventListener("click", async () => {
+    const location_id = document.getElementById("location_id").value;
+    const service_type_id = document.getElementById("service_type").value;
+    const date = document.getElementById("date").value;
+
+    slotsContainer.innerHTML = "";
+    selectedStartTimeEl.value = "";
+
+    if (!location_id || !service_type_id || !date) {
+      showStatus("Pick a location, service, and date first.", false);
+      return;
+    }
+
+    const { data, error } = await supabase.rpc("get_available_slots", {
+      p_location_id: location_id,
+      p_service_type_id: service_type_id,
+      p_date: date,
+      p_timezone: "America/Chicago",
+      p_slot_interval_minutes: 30
+    });
+
+    if (error) {
+      showStatus("Could not load slots: " + error.message, false);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      slotsContainer.innerHTML = "<p>No available times for that date.</p>";
+      return;
+    }
+
+    data.forEach((slot) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = formatSlot(slot.slot_start);
+      btn.style.margin = "6px";
+      btn.addEventListener("click", () => {
+        selectedStartTimeEl.value = slot.slot_start;
+        document.querySelectorAll("#slotsContainer button").forEach(b => {
+          b.style.background = "";
+          b.style.color = "";
+        });
+        btn.style.background = "#111827";
+        btn.style.color = "#fff";
+      });
+      slotsContainer.appendChild(btn);
+    });
+  });
+</script>
+
     loadServices();
     loadLocations();
   </script>
