@@ -135,11 +135,6 @@
 </div>
 
 <input type="hidden" id="selected_start_time" />
-      <div>
-        <label for="time">Start Time</label>
-        <input id="time" type="time" required />
-      </div>
-
       <div class="full">
         <label for="notes">Notes</label>
         <textarea id="notes" placeholder="Anything I should know before the session?"></textarea>
@@ -165,7 +160,6 @@
 
     const serviceTypeEl = document.getElementById("service_type");
     const locationEl = document.getElementById("location_id");
-    const selectedStartTimeEl = document.getElementById("time");
     const statusBox = document.getElementById("statusBox");
     const bookingForm = document.getElementById("bookingForm");
 
@@ -227,10 +221,9 @@
       const service_type_id = serviceTypeEl.value;
       const location_id = locationEl.value;
       const date = document.getElementById("date").value;
-      const time = document.getElementById("time").value;
       const notes = document.getElementById("notes").value.trim();
 
-      if (!client_name || !client_phone || !client_email || !service_type_id || !location_id || !date || !time) {
+      if (!client_name || !client_phone || !client_email || !service_type_id || !location_id || !date) {
         showStatus("Please fill out all required fields.", false);
         return;
       }
