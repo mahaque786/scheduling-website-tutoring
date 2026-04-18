@@ -208,11 +208,6 @@
       }
     }
 
-    function buildChicagoISO(dateValue, timeValue) {
-      // This creates a local datetime string. For production, use a timezone-aware library.
-      return `${dateValue}T${timeValue}:00-05:00`;
-    }
-
     bookingForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       statusBox.style.display = "none";
