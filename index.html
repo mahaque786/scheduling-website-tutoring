@@ -125,7 +125,16 @@
         <label for="date">Date</label>
         <input id="date" type="date" required />
       </div>
+      <div class="full">
+  <button type="button" id="loadSlotsBtn">Load Available Times</button>
+</div>
 
+<div class="full">
+  <label>Available Times</label>
+  <div id="slotsContainer"></div>
+</div>
+
+<input type="hidden" id="selected_start_time" />
       <div>
         <label for="time">Start Time</label>
         <input id="time" type="time" required />
