@@ -156,6 +156,7 @@
 
     const serviceTypeEl = document.getElementById("service_type");
     const locationEl = document.getElementById("location_id");
+    const selectedStartTimeEl = document.getElementById("time");
     const statusBox = document.getElementById("statusBox");
     const bookingForm = document.getElementById("bookingForm");
 
@@ -230,7 +231,12 @@
         return;
       }
 
-      const starts_at = buildChicagoISO(date, time);
+      const starts_at = selectedStartTimeEl.value;
+
+      if (!starts_at) {
+        showStatus("Please load and select an available time slot.", false);
+        return;
+      }
 
       const { data, error } = await supabase.rpc("create_booking", {
         p_service_type_id: service_type_id,
